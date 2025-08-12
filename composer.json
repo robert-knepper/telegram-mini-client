@@ -1,0 +1,14 @@
+{
+    "name": "lackammer/telegram-mini-client",
+    "license": "mit",
+    "autoload": {
+        "psr-4": {
+            "Lackammer\\TelegramMiniClient\\": "src/",
+            "App\\" : "src/App/"
+        }
+    },
+    "require": {
+        "swoft/swoole-ide-helper": "^4.4",
+        "larapack/dd": "^1.1"
+    }
+}
