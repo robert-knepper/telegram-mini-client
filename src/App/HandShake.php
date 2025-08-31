@@ -5,37 +5,41 @@ namespace App;
 use App\Encryption\Resource\PublicKeyEntity\TestRsaPublicKeyEntity;
 use App\Encryption\Resource\TelegramRSAPublicKey;
 use App\Encryption\Tools\PQFactor;
-use App\Messages\Request\TL_reqDHParams;
-use App\Messages\Request\TL_reqPQInnerDataDC;
-use App\Messages\Request\TL_reqPqMulti;
-use App\Messages\Response\TL_resPQ;
+use App\Messages\Request\Inner\TL_Req_reqPQInnerDataDC;
+use App\Messages\Request\TL_Req_reqDHParams;
+use App\Messages\Request\TL_Req_reqPqMulti;
+use App\Messages\Response\TL_Res_resPQ;
 use App\MTProto\InputSerializedData;
+use App\MTProto\MessageContainer;
 use App\MTProto\OutputSerializedData;
+use App\MTProto\ResponseRegister;
+use ParagonIE\ConstantTime\Hex;
 
 class HandShake
 {
     public function __construct()
     {
+        ResponseRegister::addTLObjRes(TL_Res_resPQ::class);
     }
 
     public function handle()
     {
         // Req_1
         $nonce = random_bytes(16);
-        $outputData = new OutputSerializedData();
-        $reqPqMulti = new TL_reqPqMulti($nonce);
-        $reqPqMulti->serialize($outputData);
-
-        $res = $this->sendRequest($outputData->data);
-        $input = new InputSerializedData();
-        $input->data = $res;
+//        $nonce = hex2bin('c5d1e36e999628b7b1989de3126f24bc');
+        $mcReqPqMulti = new MessageContainer(new TL_Req_reqPqMulti($nonce));
+        $res = $this->sendRequest($mcReqPqMulti);
 
         // Res_1
-        $resPQ = TL_resPQ::unserialize($input);
+        $mcResPQ = MessageContainer::make($res);
+        /**
+         * @var TL_Res_resPQ $resPQ
+         */
+        $resPQ = $mcResPQ->getMessage();
 
-        if ($resPQ->nonce != $nonce)
+
+        if ($resPQ->nonce != base64_encode($nonce))
             throw new \Exception('Invalid nonce');
-
         [$pBytes, $qBytes] = PQFactor::factorPQInt($resPQ->pq);
 
         $p = gmp_import($pBytes, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
@@ -48,42 +52,40 @@ class HandShake
 
         // Req_2
         $newNonce = random_bytes(32);
-        $req = new TL_reqPQInnerDataDC($resPQ->pq,gmp_intval($p),gmp_intval($q),$nonce,$resPQ->server_nonce,$newNonce,-(10000+2));
+        $req = new TL_Req_reqPQInnerDataDC($resPQ->pq, gmp_intval($p), gmp_intval($q), $nonce, $resPQ->server_nonce, $newNonce, 10000);
         $outputData = new OutputSerializedData();
         $req->serialize($outputData);
-        $pkAndFingerPrint = TelegramRSAPublicKey::findPK($resPQ->fingerprints);
 
+
+        // encrypt inner data
+        $pkAndFingerPrint = TelegramRSAPublicKey::findPK($resPQ->fingerprints);
         if (is_null($pkAndFingerPrint))
             throw new \Exception('fingerprints not found');
+        $encryptedInnerData = TelegramRSAPublicKey::encrypt($pkAndFingerPrint, $outputData->data);
 
-
-        $encryptData = TelegramRSAPublicKey::mtprotoRsaPadEncrypt(TestRsaPublicKeyEntity::getPublicKey(),$outputData->data);
-
-
-        $reqDHParam = new TL_reqDHParams($nonce,$resPQ->server_nonce,$pBytes,$qBytes,$pkAndFingerPrint::getFingerPrint(),$encryptData['encrypted_data']);
-        $outputData = new OutputSerializedData();
-        $reqDHParam->serialize($outputData);
-        $newRes = $this->sendRequest($outputData->data);
+        // --------------
+        $mcReqDHParam = new MessageContainer(new TL_Req_reqDHParams($nonce, $resPQ->server_nonce, (int)$p,(int) $q, $pkAndFingerPrint['fp'], $encryptedInnerData));
+        $newRes = $this->sendRequest($mcReqDHParam);
         dd($newRes);
-        dd($outputData,'sdwdw',$pkAndFingerPrint);
+        dd($outputData, 'sdwdw', $pkAndFingerPrint);
         dd();
-        dd((int)$q,$p);
+        dd((int)$q, $p);
         dd($resPQ->nonce);
         dd($reqPq);
 
 
 //        TL_resPq::unserialize(Out)
-        dd($res,strlen($res));
-        dd($nonce,strlen($nonce));
+        dd($res, strlen($res));
+        dd($nonce, strlen($nonce));
     }
 
-    private function sendRequest(string $payload, string $dc = 'https://venus.web.telegram.org/apiw1'): string
+    private function sendRequest(MessageContainer $payload, string $dc = 'https://venus.web.telegram.org/apiw1'): string
     { // https://venus.web.telegram.org/apiw1
-        return self::send($payload);
+//        return self::send($payload);
         $ch = curl_init($dc);
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_POSTFIELDS => $payload->serialize(),
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/octet-stream',
                 'Connection: keep-alive',

@@ -17,35 +17,67 @@ class InputSerializedData
         $this->offset = 0;
     }
 
-    public function readInt32(): int
+    public function read(string $type): mixed
+    {
+        $isVector = substr($type, 0, 6) === 'Vector';
+        switch ($type) {
+            case '#':
+                return $this->readConstructor();
+            case 'string':
+            case 'strLong':
+                return $this->readString();
+            case 'int':
+                return $this->readInt32();
+            case 'long':
+                return $this->readInt64();
+            case 'int128':
+                return $this->readInt128();
+            default:
+                if ($isVector) {
+                    $itemType = substr($type, 7, strlen($type) - 8);
+                    return $this->readVector(function (InputSerializedData $stream) use ($itemType) {
+                        return $stream->read($itemType);
+                    });
+                }
+
+                throw new \Exception("Unsupported type");
+        }
+    }
+
+    private function readInt32(): int
     {
         $val = unpack('V', substr($this->data, $this->offset, 4))[1];
         $this->offset += 4;
         return $val;
     }
 
-    public function readInt64(): int
+    private function readInt64(): int
     {
         $val = unpack('P', substr($this->data, $this->offset, 8))[1];
         $this->offset += 8;
         return $val;
     }
 
-    public function readFloat(): float
+    private function readInt128(): string
+    {
+        return base64_encode($this->readRaw(16));
+    }
+
+    private function readFloat(): float
     {
         $val = unpack('g', substr($this->data, $this->offset, 4))[1];
         $this->offset += 4;
         return $val;
     }
 
-    public function readDouble(): float
+    private function readDouble(): float
     {
         $val = unpack('e', substr($this->data, $this->offset, 8))[1];
         $this->offset += 8;
         return $val;
     }
 
-    public function readBool(): bool
+    private function readBool(): bool
     {
         $val = $this->readInt32();
         if ($val === 0x997275b5) return true;
@@ -53,7 +85,7 @@ class InputSerializedData
         throw new \Exception("Invalid bool value: 0x" . dechex($val));
     }
 
-    public function readString(): string
+    private function readString(): string
     {
         $len = ord($this->data[$this->offset]);
         $this->offset += 1;
@@ -75,13 +107,14 @@ class InputSerializedData
         return $val;
     }
 
-    public function readVector(callable $deserializeItem): array
+    private function readVector(callable $deserializeItem): array
     {
         $constructor = $this->readInt32();
         if ($constructor !== 0x1cb5c415) {
             throw new \Exception("Invalid vector constructor: 0x" . dechex($constructor));
         }
         $count = $this->readInt32();
+
         $result = [];
         for ($i = 0; $i < $count; $i++) {
             $result[] = $deserializeItem($this);
@@ -89,7 +122,7 @@ class InputSerializedData
         return $result;
     }
 
-    public function readLongVector(callable $deserializeItem): array
+    private function readLongVector(callable $deserializeItem): array
     {
         $constructor = $this->readConstructor();
         if ($constructor != '0x15c4b51c') {
@@ -103,15 +136,16 @@ class InputSerializedData
         return $result;
     }
 
-    public function readRaw(int $length): string
+    private function readRaw(int $length): string
     {
         $val = substr($this->data, $this->offset, $length);
         $this->offset += $length;
         return $val;
     }
 
-    public function readConstructor(): string
+    private function readConstructor(): int
     {
-        return '0x' . bin2hex($this->readRaw(4));
+        $bin = $this->readRaw(4);
+        return unpack('V', $bin)[1];
     }
 }

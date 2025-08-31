@@ -2,9 +2,8 @@
 
 namespace App\Encryption\Resource;
 
+use App\Encryption\Hex;
 use App\Encryption\Resource\PublicKeyEntity\BasePublicKeyEntity;
-use App\Encryption\Resource\PublicKeyEntity\ServerRsaPublicKeyEntity;
-use App\Encryption\Resource\PublicKeyEntity\TestRsaPublicKeyEntity;
 
 class TelegramRSAPublicKey
 {
@@ -12,222 +11,35 @@ class TelegramRSAPublicKey
      * @var BasePublicKeyEntity[]|string[]
      */
     private static array $publicKeyEntities = [
-        ServerRsaPublicKeyEntity::class,
-        TestRsaPublicKeyEntity::class
+        '-4344800451088585951' => ['key' => "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEAwVACPi9w23mF3tBkdZz+zwrzKOaaQdr01vAbU4E1pvkfj4sqDsm6\nlyDONS789sVoD/xCS9Y0hkkC3gtL1tSfTlgCMOOul9lcixlEKzwKENj1Yz/s7daS\nan9tqw3bfUV/nqgbhGX81v/+7RFAEd+RwFnK7a+XYl9sluzHRyVVaTTveB2GazTw\nEfzk2DWgkBluml8OREmvfraX3bkHZJTKX4EQSjBbbdJ2ZXIsRrYOXfaA+xayEGB+\n8hdlLmAjbCVfaigxX0CDqWeR1yFL9kwd9P0NsZRPsmoqVwMbMu7mStFai6aIhc3n\nSlv8kg9qv1m6XHVQY3PnEw+QQtqSIXklHwIDAQAB\n-----END RSA PUBLIC KEY-----", 'fp' => '-4344800451088585951', 'e' => '0x10001', 'n' => '0xc150023e2f70db7985ded064759cfecf0af328e69a41daf4d6f01b538135a6f91f8f8b2a0ec9ba9720ce352efcf6c5680ffc424bd634864902de0b4bd6d49f4e580230e3ae97d95c8b19442b3c0a10d8f5633fecedd6926a7f6dab0ddb7d457f9ea81b8465fcd6fffeed114011df91c059caedaf97625f6c96ecc74725556934ef781d866b34f011fce4d835a090196e9a5f0e4449af7eb697ddb9076494ca5f81104a305b6dd27665722c46b60e5df680fb16b210607ef217652e60236c255f6a28315f4083a96791d7214bf64c1df4fd0db1944fb26a2a57031b32eee64ad15a8ba68885cde74a5bfc920f6abf59ba5c75506373e7130f9042da922179251f'],
+        '847625836280919973' => ['key' => "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAruw2yP/BCcsJliRoW5eB\nVBVle9dtjJw+OYED160Wybum9SXtBBLXriwt4rROd9csv0t0OHCaTmRqBcQ0J8fx\nhN6/cpR1GWgOZRUAiQxoMnlt0R93LCX/j1dnVa/gVbCjdSxpbrfY2g2L4frzjJvd\nl84Kd9ORYjDEAyFnEA7dD556OptgLQQ2e2iVNq8NZLYTzLp5YpOdO1doK+ttrltg\ngTCy5SrKeLoCPPbOgGsdxJxyz5KKcZnSLj16yE5HvJQn0CNpRdENvRUXe6tBP78O\n39oJ8BTHp9oIjd6XWXAsp2CvK45Ol8wFXGF710w9lwCGNbmNxNYhtIkdqfsEcwR5\nJwIDAQAB\n-----END PUBLIC KEY-----", 'fp' => '847625836280919973', 'e' => '0x10001', 'n' => '0xaeec36c8ffc109cb099624685b97815415657bd76d8c9c3e398103d7ad16c9bba6f525ed0412d7ae2c2de2b44e77d72cbf4b7438709a4e646a05c43427c7f184debf72947519680e651500890c6832796dd11f772c25ff8f576755afe055b0a3752c696eb7d8da0d8be1faf38c9bdd97ce0a77d3916230c4032167100edd0f9e7a3a9b602d04367b689536af0d64b613ccba7962939d3b57682beb6dae5b608130b2e52aca78ba023cf6ce806b1dc49c72cf928a7199d22e3d7ac84e47bc9427d0236945d10dbd15177bab413fbf0edfda09f014c7a7da088dde9759702ca760af2b8e4e97cc055c617bd74c3d97008635b98dc4d621b4891da9fb0473047927'],
+        '1562291298945373506' => ['key' => "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvfLHfYH2r9R70w8prHbl\nWt/nDkh+XkgpflqQVcnAfSuTtO05lNPspQmL8Y2XjVT4t8cT6xAkdgfmmvnvRPOO\nKPi0OfJXoRVylFzAQG/j83u5K3kRLbae7fLccVhKZhY46lvsueI1hQdLgNV9n1cQ\n3TDS2pQOCtovG4eDl9wacrXOJTG2990VjgnIKNA0UMoP+KF03qzryqIt3oTvZq03\nDyWdGK+AZjgBLaDKSnC6qD2cFY81UryRWOab8zKkWAnhw2kFpcqhI0jdV5QaSCEx\nvnsjVaX0Y1N0870931/5Jb9ICe4nweZ9kSDF/gip3kWLG0o8XQpChDfyvsqB9OLV\n/wIDAQAB\n-----END PUBLIC KEY-----", 'fp' => '1562291298945373506', 'e' => '0x10001', 'n' => '0xbdf2c77d81f6afd47bd30f29ac76e55adfe70e487e5e48297e5a9055c9c07d2b93b4ed3994d3eca5098bf18d978d54f8b7c713eb10247607e69af9ef44f38e28f8b439f257a11572945cc0406fe3f37bb92b79112db69eedf2dc71584a661638ea5becb9e23585074b80d57d9f5710dd30d2da940e0ada2f1b878397dc1a72b5ce2531b6f7dd158e09c828d03450ca0ff8a174deacebcaa22dde84ef66ad370f259d18af806638012da0ca4a70baa83d9c158f3552bc9158e69bf332a45809e1c36905a5caa12348dd57941a482131be7b2355a5f4635374f3bd3ddf5ff925bf4809ee27c1e67d9120c5fe08a9de458b1b4a3c5d0a428437f2beca81f4e2d5ff'],
+        '-5859577972006586033' => ['key' => "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs/ditzm+mPND6xkhzwFI\nz6J/968CtkcSE/7Z2qAJiXbmZ3UDJPGrzqTDHkO30R8VeRM/Kz2f4nR05GIFiITl\n4bEjvpy7xqRDspJcCFIOcyXm8abVDhF+th6knSU0yLtNKuQVP6voMrnt9MV1X92L\nGZQLgdHZbPQz0Z5qIpaKhdyA8DEvWWvSUwwc+yi1/gGaybwlzZwqXYoPOhwMebzK\nUk0xW14htcJrRrq+PXXQbRzTMynseCoPIoke0dtCodbA3qQxQovE16q9zz4Otv2k\n4j63cz53J+mhkVWAeWxVGI0lltJmWtEYK6er8VqqWot3nqmWMXogrgRLggv/Nbbo\noQIDAQAB\n-----END PUBLIC KEY-----", 'fp' => '-5859577972006586033', 'e' => '0x10001', 'n' => '0xb3f762b739be98f343eb1921cf0148cfa27ff7af02b6471213fed9daa0098976e667750324f1abcea4c31e43b7d11f1579133f2b3d9fe27474e462058884e5e1b123be9cbbc6a443b2925c08520e7325e6f1a6d50e117eb61ea49d2534c8bb4d2ae4153fabe832b9edf4c5755fdd8b19940b81d1d96cf433d19e6a22968a85dc80f0312f596bd2530c1cfb28b5fe019ac9bc25cd9c2a5d8a0f3a1c0c79bcca524d315b5e21b5c26b46babe3d75d06d1cd33329ec782a0f22891ed1db42a1d6c0dea431428bc4d7aabdcf3e0eb6fda4e23eb7733e7727e9a1915580796c55188d2596d2665ad1182ba7abf15aaa5a8b779ea996317a20ae044b820bff35b6e8a1'],
+        '6491968696586960280' => ['key' => "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvmpxVY7ld/8DAjz6F6q0\n5shjg8/4p6047bn6/m8yPy1RBsvIyvuDuGnP/RzPEhzXQ9UJ5Ynmh2XJZgHoE9xb\nnfxL5BXHplJhMtADXKM9bWB11PU1Eioc3+AXBB8QiNFBn2XI5UkO5hPhbb9mJpjA\n9Uhw8EdfqJP8QetVsI/xrCEbwEXe0xvifRLJbY08/Gp66KpQvy7g8w7VB8wlgePe\nxW3pT13Ap6vuC+mQuJPyiHvSxjEKHgqePji9NP3tJUFQjcECqcm0yV7/2d0t/pbC\nm+ZH1sadZspQCEPPrtbkQBlvHb4OLiIWPGHKSMeRFvp3IWcmdJqXahxLCUS1Eh6M\nAQIDAQAB\n-----END PUBLIC KEY-----", 'fp' => '6491968696586960280', 'e' => '0x10001', 'n' => '0xbe6a71558ee577ff03023cfa17aab4e6c86383cff8a7ad38edb9fafe6f323f2d5106cbc8cafb83b869cffd1ccf121cd743d509e589e68765c96601e813dc5b9dfc4be415c7a6526132d0035ca33d6d6075d4f535122a1cdfe017041f1088d1419f65c8e5490ee613e16dbf662698c0f54870f0475fa893fc41eb55b08ff1ac211bc045ded31be27d12c96d8d3cfc6a7ae8aa50bf2ee0f30ed507cc2581e3dec56de94f5dc0a7abee0be990b893f2887bd2c6310a1e0a9e3e38bd34fded2541508dc102a9c9b4c95effd9dd2dfe96c29be647d6c69d66ca500843cfaed6e440196f1dbe0e2e22163c61ca48c79116fa77216726749a976a1c4b0944b5121e8c01']
     ];
-    public static function findPK(array $fingerPrints): BasePublicKeyEntity|string|null
+
+    public static function findPK(array $fingerPrints): ?array
     {
         foreach (self::$publicKeyEntities as $publicKeyEntity) {
-            if (in_array($publicKeyEntity::getFingerPrint(), $fingerPrints)) {
+            if (in_array($publicKeyEntity['fp'], $fingerPrints)) {
                 return $publicKeyEntity;
             }
         }
         return null;
     }
 
-
-    /**
-     * MTProto RSA_PAD encryptor for step 4.1 (https://core.telegram.org/mtproto/auth_key)
-     * - data must be TL-serialized p_q_inner_data(_temp_dc) (<= 144 bytes)
-     * - public key is Telegram RSA public key in PEM
-     *
-     * Returns:
-     * [
-     *   'encrypted_data'      => (binary 256 bytes),
-     *   'encrypted_hex'       => (hex string),
-     *   'public_key_fingerprint_long' => (signed int64 as string),
-     *   'public_key_fingerprint_hex'  => (16-hex uppercase),
-     * ]
-     */
-    public static function mtprotoRsaPadEncrypt(string $pubKeyPem, string $data): array
+    public static function encrypt(array $publicKeyEntity, string $data): string
     {
-        if (strlen($data) > 144) {
-            throw new InvalidArgumentException("data length must be <= 144 bytes per spec (will be padded to 192).");
-        }
+        $sha_digest = sha1($data, true);
+        $random_bytes = random_bytes(256 - strlen($data) - strlen($sha_digest));
+        $to_encrypt = $sha_digest . $data . $random_bytes;
 
-        // ---- Parse RSA public key: get modulus n and exponent e (binary, big-endian)
-        $key = openssl_pkey_get_public($pubKeyPem);
-        if ($key === false) {
-            throw new RuntimeException("Invalid RSA public key (PEM).");
-        }
-        $details = openssl_pkey_get_details($key);
-        if (!$details || empty($details['rsa']['n']) || empty($details['rsa']['e'])) {
-            throw new RuntimeException("Failed to extract RSA modulus/exponent.");
-        }
-        $n_bin = $details['rsa']['n']; // big-endian
-        $e_bin = $details['rsa']['e']; // big-endian
-
-        // ---- Compute Telegram-style RSA fingerprint (lower 64 bits of SHA1 of TL-serialized RSAPublicKey)
-        $fingerprintBytes = self::rsa_fingerprint_bytes($n_bin, $e_bin); // last 8 bytes of SHA1
-        $fingerprintHex = strtoupper(bin2hex($fingerprintBytes));  // e.g. 85FD64DE851D9DD0
-        // TL 'long' on the wire is little-endian; keep signed int64 as string for PHP safety
-        $fingerprintLongLE = self::bytes_le_to_int64_string($fingerprintBytes);
-
-        // ---- Build RSA_PAD(data, key) as per 4.1
-        $encrypted = self::rsa_pad_encrypt_block($data, $n_bin, $e_bin);
-
-        return [
-            'encrypted_data' => $encrypted,
-            'encrypted_hex'  => bin2hex($encrypted),
-            'public_key_fingerprint_long' => $fingerprintLongLE,
-            'public_key_fingerprint_hex'  => $fingerprintHex,
-        ];
+        return Hex::decode(gmp_strval(gmp_powm(
+            gmp_init(Hex::encode($to_encrypt), 16),
+            gmp_init($publicKeyEntity['e'], 16),
+            gmp_init($publicKeyEntity['n'], 16)),
+            16
+        ));
     }
-
-    /** 4.1 RSA_PAD implementation */
-    private static function rsa_pad_encrypt_block(string $data, string $n_bin, string $e_bin): string
-    {
-        // data_with_padding: data + random -> total = 192 bytes
-        $padLen = 192 - strlen($data);
-        if ($padLen < 0) {
-            throw new InvalidArgumentException("data too long for RSA_PAD.");
-        }
-        $data_with_padding = $data . random_bytes($padLen);
-
-        // reverse bytes
-        $data_pad_reversed = strrev($data_with_padding);
-
-        // temp_key (32 bytes)
-        // retry loop if key_aes_encrypted >= modulus
-        for ($attempt = 0; $attempt < 50; $attempt++) {
-            $temp_key = random_bytes(32);
-
-            // data_with_hash = data_pad_reversed + SHA256(temp_key || data_with_padding)  -> 224 bytes
-            $h = hash('sha256', $temp_key . $data_with_padding, true);
-            $data_with_hash = $data_pad_reversed . $h; // 192 + 32 = 224
-
-            // AES-256-IGE with zero IV (32 bytes of zero)
-            $aes_encrypted = self::aes256_ige_encrypt($data_with_hash, $temp_key, str_repeat("\x00", 32)); // 224 bytes
-
-            // temp_key_xor = temp_key XOR SHA256(aes_encrypted)
-            $h2 = hash('sha256', $aes_encrypted, true);
-            $temp_key_xor = $temp_key ^ $h2;
-
-            // key_aes_encrypted = temp_key_xor || aes_encrypted -> 32 + 224 = 256 bytes
-            $key_aes_encrypted = $temp_key_xor . $aes_encrypted;
-
-            // compare big-endian integer with modulus n; if >= n, retry
-            $m = gmp_import($key_aes_encrypted, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-            $n = gmp_import($n_bin, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-            if (gmp_cmp($m, $n) >= 0) {
-                continue; // regenerate temp_key
-            }
-
-            // RSA raw: c = m^e mod n, big-endian, exactly 256 bytes
-            $e = gmp_import($e_bin, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-            $c = gmp_powm($m, $e, $n);
-            $out = gmp_export($c, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-            // left pad to 256 bytes
-            if (strlen($out) < 256) {
-                $out = str_repeat("\x00", 256 - strlen($out)) . $out;
-            }
-            return $out;
-        }
-
-        throw new RuntimeException("RSA_PAD failed to produce value < modulus after several attempts.");
-    }
-
-    /** Compute Telegram RSA fingerprint: lower 64 bits of SHA1( TL-serialized rsa_public_key{ n:string, e:string } ) */
-    private static function rsa_fingerprint_bytes(string $n_bin, string $e_bin): string
-    {
-        $payload = self::tl_string($n_bin) . self::tl_string($e_bin);
-        $sha1 = sha1($payload, true);           // 20 bytes
-        return substr($sha1, -8);               // lower 64 bits = last 8 bytes (no byte reordering)
-    }
-
-    /** TL string serialization (Binary Data Serialization rules) */
-    private static function tl_string(string $s): string
-    {
-        $len = strlen($s);
-        if ($len < 254) {
-            $out = chr($len) . $s;
-            // pad to 4-byte boundary
-            $pad = (4 - (($len + 1) % 4)) % 4;
-            return $out . str_repeat("\x00", $pad);
-        } else {
-            // 254 + 3-byte little-endian length
-            $lenLe = pack('V', $len); // 4-byte LE; we will use only first 3 bytes
-            $out = "\xFE" . substr($lenLe, 0, 3) . $s;
-            $pad = (4 - (($len + 4) % 4)) % 4;
-            return $out . str_repeat("\x00", $pad);
-        }
-    }
-
-    /** Convert 8 bytes (big-endian from SHA1 tail) to signed int64 string in little-endian for TL 'long' */
-    private static function bytes_le_to_int64_string(string $last8FromSha1): string
-    {
-        // The spec says: take final 8 bytes of SHA1(s) as 64-bit integer; small numbers are little-endian normally.
-        // For wire (long) you send little-endian. We'll interpret the 8 bytes as big-endian number, then output signed decimal.
-        // But to be safest across PHP, just pack as little-endian and unpack as signed 64.
-        $le = strrev($last8FromSha1); // convert to little-endian
-        $arr = unpack('q', $le);      // signed 64-bit
-        // On 32-bit PHP, 'q' may not be supported; fallback to unsigned and manual sign handling:
-        if ($arr === false) {
-            $u = unpack('P', $le); // little-endian unsigned 64
-            $u = $u[1];
-            // Convert to signed decimal string
-            if (PHP_INT_SIZE >= 8) {
-                $signed = ($u & (1<<63)) ? ($u - (1<<64)) : $u;
-                return (string)$signed;
-            }
-            // 32-bit PHP fallback using BCMath/GMP:
-            $g = gmp_init('0', 10);
-            for ($i = 0; $i < 8; $i++) {
-                $g = gmp_add(gmp_mul($g, 256), ord($le[$i]));
-            }
-            if (gmp_cmp($g, gmp_init('9223372036854775807')) > 0) { // > INT64_MAX
-                $g = gmp_sub($g, gmp_pow(2, 64));
-            }
-            return gmp_strval($g);
-        }
-        return (string)$arr[1];
-    }
-
-    /**
-     * AES-256-IGE encrypt (no padding), single-shot, iv = 32 bytes.
-     * Uses OpenSSL 'aes-256-ige' if available; otherwise a small pure-PHP IGE built over AES-ECB.
-     */
-    private static function aes256_ige_encrypt(string $plaintext, string $key, string $iv): string
-    {
-        if (strlen($key) !== 32) throw new InvalidArgumentException("IGE key must be 32 bytes.");
-        if (strlen($iv)  !== 32) throw new InvalidArgumentException("IGE IV must be 32 bytes.");
-        if ((strlen($plaintext) % 16) !== 0) {
-            throw new InvalidArgumentException("IGE plaintext length must be multiple of 16 (got ".strlen($plaintext).").");
-        }
-
-        // Try OpenSSL's native aes-256-ige if present
-        $methods = openssl_get_cipher_methods(true);
-        if (in_array('aes-256-ige', $methods, true)) {
-            $out = openssl_encrypt($plaintext, 'aes-256-ige', $key, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING, $iv);
-            if ($out === false) {
-                throw new RuntimeException("OpenSSL aes-256-ige failed.");
-            }
-            return $out;
-        }
-
-        // Fallback pure-PHP IGE (built over AES-256-ECB, no padding)
-        $blockEnc = function (string $block) use ($key): string {
-            $r = openssl_encrypt($block, 'aes-256-ecb', $key, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING);
-            if ($r === false) throw new RuntimeException("OpenSSL AES-ECB failed.");
-            return $r;
-        };
-
-        $ciphertext = '';
-        $prevC = substr($iv, 16, 16);
-        $prevP = substr($iv, 0, 16);
-
-        $len = strlen($plaintext);
-        for ($off = 0; $off < $len; $off += 16) {
-            $p = substr($plaintext, $off, 16);
-            $x = $p ^ $prevC;
-            $y = $blockEnc($x);
-            $c = $y ^ $prevP;
-            $ciphertext .= $c;
-            $prevP = $p;
-            $prevC = $c;
-        }
-        return $ciphertext;
-    }
-
 
 }

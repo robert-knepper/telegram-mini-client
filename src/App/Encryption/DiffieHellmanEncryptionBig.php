@@ -14,6 +14,11 @@ class DiffieHellmanEncryptionBig extends DiffieHellmanEncryptionSmall
         return $this->modPow($baseNumberG, $privateKey, $this->bigPrimeNumberP);
     }
 
+    function generateSharedKey(int $privateKey, int $oppositePublicKey): int
+    {
+        return $this->generatePublicKeyFromPrivateKey($privateKey, $oppositePublicKey);
+    }
+
     /**
      * prevent overflow in pow big number
      * Square-and-Multiply

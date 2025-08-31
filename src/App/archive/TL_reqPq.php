@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Messages\Request;
+namespace App\archive;
 
 use App\MTProto\InputSerializedData;
 use App\MTProto\OutputSerializedData;
-use App\MTProto\TLObject;
+use App\MTProto\BaseTLReqObject;
 
-class TL_reqPqMulti extends TLObject
+class BaseTL_Req_resPq extends BaseTLReqObject
 {
 
     private string $authKeyId;
@@ -22,26 +22,23 @@ class TL_reqPqMulti extends TLObject
 
     public static function getConstructor(): int
     {
-        return 0xbe7e8ef1;
+        return 0xbe7e8ef1; // constructor واقعی resPQ
     }
 
     public function serialize(OutputSerializedData $out): void
     {
-
-
-        $out->writeInt64((int)$this->authKeyId);
-        $out->writeInt64($this->messageId);
-
         $body = new OutputSerializedData();
         $body->writeInt32(self::getConstructor());
         $body->writeRaw($this->nonce);
         $bodyLen = strlen($body->data);
 
+        $out->writeInt64((int)$this->authKeyId);
+        $out->writeInt64($this->messageId);
         $out->writeInt32($bodyLen);
         $out->writeRaw($body->data);
     }
 
-    public static function unserialize(InputSerializedData $in): TLObject
+    public static function response(InputSerializedData $in): BaseTLReqObject
     {
         throw new \Exception('not implemented');
     }

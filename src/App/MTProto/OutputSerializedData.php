@@ -11,7 +11,7 @@ class OutputSerializedData
         $this->newData();
     }
 
-    public function newData() : void
+    public function newData(): void
     {
         $this->data = '';
     }
@@ -19,6 +19,47 @@ class OutputSerializedData
     public function getData(): string
     {
         return $this->data;
+    }
+
+    public function write(mixed $val, string $type)
+    {
+        $isVector = (
+            is_array($val)
+            && strlen($type) > 7
+            && substr($type, 0, 6) == 'Vector'
+        );
+        switch ($type) {
+            case '#':
+                $this->writeConstructor($val);
+                break;
+            case 'string':
+                $this->writeString($val);
+                break;
+            case 'int':
+                $this->writeInt32($val);
+                break;
+            case 'long':
+                $this->writeInt64($val);
+                break;
+            case 'int128':
+            case 'int256':
+            case 'int512':
+                $this->writeRaw($val);
+                break;
+            default:
+                if ($isVector){
+                    $this->writeVector($val,function (){
+                    });
+                }
+                throw new \Exception("Unsupported type");
+
+        }
+    }
+
+
+    public function writeConstructor(int $val): void
+    {
+        $this->writeInt32($val);
     }
 
     public function writeInt32(int $val): void
@@ -81,6 +122,7 @@ class OutputSerializedData
     {
         $this->data .= $val;
     }
+
     public function writeP_Or_Q($val): void
     {
         $this->data .= chr(strlen(pack('V', $val))) . pack('V', $val) . str_repeat("\0", 3);
