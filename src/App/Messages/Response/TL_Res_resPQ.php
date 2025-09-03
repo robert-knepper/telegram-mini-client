@@ -23,6 +23,7 @@ class TL_Res_resPQ extends BaseTLResObject
         $obj->nonce = $in->read('int128');
         $obj->server_nonce = $in->read('int128');
         $obj->pq = $in->read('string');
+//        $obj->pq = unpack('q', strrev($in->read('string')))[1];
         $obj->fingerprints = $in->read('Vector<long>');
 
         return $obj;

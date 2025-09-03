@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Crypto\Crypt;
 use App\Encryption\Resource\PublicKeyEntity\TestRsaPublicKeyEntity;
 use App\Encryption\Resource\TelegramRSAPublicKey;
 use App\Encryption\Tools\PQFactor;
@@ -13,7 +14,12 @@ use App\MTProto\InputSerializedData;
 use App\MTProto\MessageContainer;
 use App\MTProto\OutputSerializedData;
 use App\MTProto\ResponseRegister;
+use danog\MadelineProto\RSA;
+use danog\MadelineProto\SecurityException;
+use danog\MadelineProto\Tools;
 use ParagonIE\ConstantTime\Hex;
+use phpseclib3\Crypt\Random;
+use phpseclib3\Math\BigInteger;
 
 class HandShake
 {
@@ -25,11 +31,11 @@ class HandShake
     public function handle()
     {
         // Req_1
-        $nonce = random_bytes(16);
+        $nonce = Random::string(16);
 //        $nonce = hex2bin('c5d1e36e999628b7b1989de3126f24bc');
         $mcReqPqMulti = new MessageContainer(new TL_Req_reqPqMulti($nonce));
-        $res = $this->sendRequest($mcReqPqMulti);
 
+        $res = $this->sendRequest($mcReqPqMulti);
         // Res_1
         $mcResPQ = MessageContainer::make($res);
         /**
@@ -38,34 +44,76 @@ class HandShake
         $resPQ = $mcResPQ->getMessage();
 
 
-        if ($resPQ->nonce != base64_encode($nonce))
+        if ($resPQ->nonce != $nonce)
             throw new \Exception('Invalid nonce');
-        [$pBytes, $qBytes] = PQFactor::factorPQInt($resPQ->pq);
+        $pq = unpack('q', strrev($resPQ->pq))[1];
+        $resultFactorPQ = FactorPQ::factor($pq);
+        $p = $resultFactorPQ['p'];
+        $q = $resultFactorPQ['q'];
 
-        $p = gmp_import($pBytes, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-        $q = gmp_import($qBytes, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-        $pq = gmp_import($resPQ->pq, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
-
-        if (gmp_cmp(gmp_mul($p, $q), $pq) !== 0) {
-            throw new \Exception('p q Factor not match');
-        }
+        if ($p * $q !== $pq)
+            throw new \Exception('Invalid factor pq');
+        $p_bytes = strrev(pack('V', $p));
+        $q_bytes = strrev(pack('V', $q));
 
         // Req_2
-        $newNonce = random_bytes(32);
-        $req = new TL_Req_reqPQInnerDataDC($resPQ->pq, gmp_intval($p), gmp_intval($q), $nonce, $resPQ->server_nonce, $newNonce, 10000);
+        $newNonce = Random::string(32);
+        $req = new TL_Req_reqPQInnerDataDC($resPQ->pq, $p_bytes, $q_bytes, $nonce, $resPQ->server_nonce, $newNonce, 2);
         $outputData = new OutputSerializedData();
         $req->serialize($outputData);
+        $data_with_padding = $outputData->data . Random::string(192 - \strlen($outputData->data));
+        $data_pad_reversed = strrev($data_with_padding);
 
+        // -------------------------- find rsa key
 
-        // encrypt inner data
-        $pkAndFingerPrint = TelegramRSAPublicKey::findPK($resPQ->fingerprints);
-        if (is_null($pkAndFingerPrint))
-            throw new \Exception('fingerprints not found');
-        $encryptedInnerData = TelegramRSAPublicKey::encrypt($pkAndFingerPrint, $outputData->data);
+        $fingersByByte = [];
+
+        foreach ($resPQ->fingerprints as $item) {
+            $fingersByByte[] = pack('P', $item);
+        }
+        $fps = $fingersByByte;
+
+        $rsaKey = unserialize(base64_decode('czo0MjU6Ii0tLS0tQkVHSU4gUlNBIFBVQkxJQyBLRVktLS0tLQpNSUlCQ2dLQ0FRRUE2THN6QmNDMUxHenlyOTkyTnpFMGllWStCU2FPVzYyMkFhOUJkNFpITGwrVHVGUTRsbzRnCjVuS2FNQndLL0JJYjl4VWZnMFEyOS8ybWdJUjZacjlrck03SGp1SWNDekZ2RHRyK0wwR1FqYWU5SDBwUkIyT08KNjJjRUNzNUhLaFQ1RFo5OEszM3ZtV2lMb3djNjIxZFF1d0tXU1FLaldmNTBYWUZ3NDJoMjFQMktYVUd5cDJ5LworYUV5Wit1VmdMTFFiUkExZEVqU0RaMmlHUnkxMk1rNWdwWWMzOTdhWXA0Mzhmc0pvSElnSjJsZ012NWg3V1k5CnQ2Ti9ieVk5Tnc5cDIxT2czQW9YU0wycS8ySUoxV1JVaGViZ0FkR1ZNbFYxZmt1T1FvRXpSN0VkcHF0UUQ5Q3MKNStiZm8zTmhtY3l2azVmdEIwV2tKOXo2Yk5aN3l4clA4d0lEQVFBQgotLS0tLUVORCBSU0EgUFVCTElDIEtFWS0tLS0tIjs='));
+        $n = unserialize(base64_decode('TzoyNjoicGhwc2VjbGliM1xNYXRoXEJpZ0ludGVnZXIiOjE6e3M6MzE6IgBwaHBzZWNsaWIzXE1hdGhcQmlnSW50ZWdlcgBoZXgiO3M6NTE0OiIwMGU4YmIzMzA1YzBiNTJjNmNmMmFmZGY3NjM3MzEzNDg5ZTYzZTA1MjY4ZTViYWRiNjAxYWY0MTc3ODY0NzJlNWY5M2I4NTQzODk2OGUyMGU2NzI5YTMwMWMwYWZjMTIxYmY3MTUxZjgzNDQzNmY3ZmRhNjgwODQ3YTY2YmY2NGFjY2VjNzhlZTIxYzBiMzE2ZjBlZGFmZTJmNDE5MDhkYTdiZDFmNGE1MTA3NjM4ZWViNjcwNDBhY2U0NzJhMTRmOTBkOWY3YzJiN2RlZjk5Njg4YmEzMDczYWRiNTc1MGJiMDI5NjQ5MDJhMzU5ZmU3NDVkODE3MGUzNjg3NmQ0ZmQ4YTVkNDFiMmE3NmNiZmY5YTEzMjY3ZWI5NTgwYjJkMDZkMTAzNTc0NDhkMjBkOWRhMjE5MWNiNWQ4YzkzOTgyOTYxY2RmZGVkYTYyOWUzN2YxZmIwOWEwNzIyMDI3Njk2MDMyZmU2MWVkNjYzZGI3YTM3ZjZmMjYzZDM3MGY2OWRiNTNhMGRjMGExNzQ4YmRhYWZmNjIwOWQ1NjQ1NDg1ZTZlMDAxZDE5NTMyNTU3NTdlNGI4ZTQyODEzMzQ3YjExZGE2YWI1MDBmZDBhY2U3ZTZkZmEzNzM2MTk5Y2NhZjkzOTdlZDA3NDVhNDI3ZGNmYTZjZDY3YmNiMWFjZmYzIjt9'));
+        $e = unserialize(base64_decode('TzoyNjoicGhwc2VjbGliM1xNYXRoXEJpZ0ludGVnZXIiOjE6e3M6MzE6IgBwaHBzZWNsaWIzXE1hdGhcQmlnSW50ZWdlcgBoZXgiO3M6NjoiMDEwMDAxIjt9'));
+        $fp = unserialize(base64_decode('czo4OiKF/WTehR2d0CI7'));
+        $rsa = \App\Encryption\RSA::load($rsaKey,$n,$e,$fp);
+        $selectedRsa = null;
+        foreach ([$rsa] as $curkey) {
+            if (\in_array($curkey->fp, $fps, true)) {
+                $selectedRsa = $curkey;
+            }
+        }
+        /**
+         * @var \App\Encryption\RSA $selectedRsa
+         */
+        if (is_null($selectedRsa))
+            throw new \Exception('rsa fp not found');
+
+        do {
+            $temp_key = Random::string(32);
+            $data_with_hash = $data_pad_reversed.hash('sha256', $temp_key.$data_with_padding, true);
+            $aes_encrypted = Crypt::igeEncrypt($data_with_hash, $temp_key, str_repeat("\0", 32));
+            $temp_key_xor = $temp_key ^ hash('sha256', $aes_encrypted, true);
+            $key_aes_encrypted_bigint = new BigInteger($temp_key_xor.$aes_encrypted, 256);
+        } while ($key_aes_encrypted_bigint->compare($selectedRsa->n) >= 0);
+        $encrypted_data = $selectedRsa->encrypt($key_aes_encrypted_bigint);
 
         // --------------
-        $mcReqDHParam = new MessageContainer(new TL_Req_reqDHParams($nonce, $resPQ->server_nonce, (int)$p,(int) $q, $pkAndFingerPrint['fp'], $encryptedInnerData));
+        $mcReqDHParam = new MessageContainer(new TL_Req_reqDHParams($nonce, $resPQ->server_nonce, $p_bytes, $q_bytes, $selectedRsa->fp, $encrypted_data));
+        $foo = [
+            'tl' => $mcReqDHParam->serialize(),
+            'nonce' => $nonce,
+            'server_nonce' => $resPQ->server_nonce,
+            'p_bytes' => $p_bytes,
+            'q_bytes' => $q_bytes,
+            'encrypted_data' => $encrypted_data,
+        ];
+//        dd(base64_encode(serialize($foo)));
         $newRes = $this->sendRequest($mcReqDHParam);
+        dd($newRes);
+        dd($mcReqDHParam->serialize(),strlen($mcReqDHParam->serialize()));
+//        dump('dwdw', $mcReqDHParam);
         dd($newRes);
         dd($outputData, 'sdwdw', $pkAndFingerPrint);
         dd();

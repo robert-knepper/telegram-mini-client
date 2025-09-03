@@ -2,6 +2,8 @@
 
 namespace App\MTProto;
 
+use danog\MadelineProto\Lang;
+
 class OutputSerializedData
 {
     public string $data;
@@ -41,14 +43,20 @@ class OutputSerializedData
             case 'long':
                 $this->writeInt64($val);
                 break;
+            case 'long_f':
+                $this->writeInt64($val);
+                break;
             case 'int128':
             case 'int256':
             case 'int512':
                 $this->writeRaw($val);
                 break;
+            case 'raw':
+                $this->writeRaw($val);
+                break;
             default:
-                if ($isVector){
-                    $this->writeVector($val,function (){
+                if ($isVector) {
+                    $this->writeVector($val, function () {
                     });
                 }
                 throw new \Exception("Unsupported type");
@@ -57,59 +65,94 @@ class OutputSerializedData
     }
 
 
-    public function writeConstructor(int $val): void
+    private function writeConstructor(int $val): void
     {
-        $this->writeInt32($val);
-    }
-
-    public function writeInt32(int $val): void
-    {
+        if ($val > 4294967295) {
+            throw new \Exception('value_bigger_than_4294967296');
+        }
+        if ($val < 0) {
+            throw new \Exception('value_smaller_than_0');
+        }
         $this->data .= pack('V', $val);
     }
 
-    public function writeInt64($val): void
+    private function writeInt32(int $val): void
     {
-        $this->data .= pack('P', $val);
+        if ($val > 2147483647) {
+            throw new \Exception('value_bigger_than_2147483647');
+        }
+        if ($val < -2147483648) {
+            throw new \Exception('value_smaller_than_2147483648');
+        }
+        $res = pack('l', $val);
+        $this->data .= $res;
     }
 
-    public function writeFloat(float $val): void
+    private function writeInt64($val): void
+    {
+//         $this->data .= pack('P', $val);
+        $this->data .= pack('q', $val);
+    }
+
+    private function writeFloat(float $val): void
     {
         $this->data .= pack('g', $val);
     }
 
-    public function writeDouble(float $val): void
+    private function writeDouble(float $val): void
     {
         $this->data .= pack('e', $val);
     }
 
-    public function writeBool(bool $val): void
+    private function writeBool(bool $val): void
     {
         $this->writeInt32($val ? 0x997275b5 : 0xbc799737);
     }
 
-    public function writeString(string $val): void
+    private static function posmod(int $a, int $b): int
     {
-        $len = strlen($val);
-        if ($len < 254) {
-            // length as 1 byte
-            $this->data .= chr($len);
-            $this->data .= $val;
-            // padding to make total length multiple of 4
-            $padLen = (4 - (($len + 1) % 4)) % 4;
-            $this->data .= str_repeat("\x00", $padLen);
-        } else {
-            // length as 0xFE + 3 bytes length
-            $this->data .= chr(254);
-            $this->data .= pack('V', $len); // actually 3 bytes used, pack returns 4
-            // TL uses only 3 bytes, but pack returns 4, so use only first 3 bytes
-            $this->data = substr($this->data, 0, -1); // remove last byte
-            $this->data .= $val;
-            $padLen = (4 - ($len % 4)) % 4;
-            $this->data .= str_repeat("\x00", $padLen);
-        }
+        $resto = $a % $b;
+        return $resto < 0 ? $resto + abs($b) : $resto;
     }
 
-    public function writeVector(array $items, callable $serializeItem): void
+    private function writeString(string $val): void
+    {
+
+        $l = \strlen($val);
+        $concat = '';
+        if ($l <= 253) {
+            $concat .= \chr($l);
+            $concat .= $val;
+            $concat .= pack('@' . self::posmod(-$l - 1, 4));
+        } else {
+            $concat .= \chr(254);
+            $concat .= substr(pack('l', $l), 0, 3);
+            $concat .= $val;
+            $concat .= pack('@' . self::posmod(-$l, 4));
+        }
+
+        $this->write($concat, 'raw');
+
+        /* $len = strlen($val);
+         if ($len < 254) {
+             // length as 1 byte
+             $this->data .= chr($len);
+             $this->data .= $val;
+             // padding to make total length multiple of 4
+             $padLen = (4 - (($len + 1) % 4)) % 4;
+             $this->data .= str_repeat("\x00", $padLen);
+         } else {
+             // length as 0xFE + 3 bytes length
+             $this->data .= chr(254);
+             $this->data .= pack('V', $len); // actually 3 bytes used, pack returns 4
+             // TL uses only 3 bytes, but pack returns 4, so use only first 3 bytes
+             $this->data = substr($this->data, 0, -1); // remove last byte
+             $this->data .= $val;
+             $padLen = (4 - ($len % 4)) % 4;
+             $this->data .= str_repeat("\x00", $padLen);*/
+    }
+
+    private function writeVector(array $items, callable $serializeItem): void
     {
         $this->writeInt32(0x1cb5c415);
         $this->writeInt32(count($items));
@@ -118,12 +161,12 @@ class OutputSerializedData
         }
     }
 
-    public function writeRaw(string $val): void
+    private function writeRaw(string $val): void
     {
         $this->data .= $val;
     }
 
-    public function writeP_Or_Q($val): void
+    private function writeP_Or_Q($val): void
     {
         $this->data .= chr(strlen(pack('V', $val))) . pack('V', $val) . str_repeat("\0", 3);
     }

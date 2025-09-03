@@ -12,12 +12,12 @@ class TL_Req_reqDHParams extends BaseTLReqObject
 {
 
     public function __construct(
-        private        $nonce,
-        private        $serverNonce,
-        private int    $p,
-        private int    $q,
-        private string $publicKeyFingerPrint,
-        private        $encryptData,
+        private $nonce,
+        private $serverNonce,
+        private $p,
+        private $q,
+        private $publicKeyFingerPrint,
+        private $encryptData,
     )
     {
     }
@@ -32,10 +32,10 @@ class TL_Req_reqDHParams extends BaseTLReqObject
     {
 //        $out->write(random_bytes(20), 'int128');
         $out->write($this->nonce, 'int128');
-        $out->write(base64_decode($this->serverNonce), 'int128');
-        $out->write(Hex::decode(gmp_strval($this->p, 16)), 'string');
-        $out->write(Hex::decode(gmp_strval($this->q, 16)), 'string');
-        $out->write($this->publicKeyFingerPrint, 'long');
+        $out->write($this->serverNonce, 'int128');
+        $out->write($this->p, 'string');
+        $out->write($this->q, 'string');
+        $out->write($this->publicKeyFingerPrint, 'raw');
         $out->write($this->encryptData, 'string');
     }
 

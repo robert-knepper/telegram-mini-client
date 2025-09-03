@@ -12,9 +12,9 @@ class TL_Req_reqPQInnerDataDC extends BaseTLReqObject
 {
 
     public function __construct(
-        private string $pq,
-        private int $p,
-        private int $q,
+        private $pq,
+        private $p,
+        private $q,
         private $nonce,
         private $serverNonce,
         private $newNonce,
@@ -34,10 +34,10 @@ class TL_Req_reqPQInnerDataDC extends BaseTLReqObject
     {
         $out->write(self::getConstructor(),'#');
         $out->write($this->pq,'string');
-        $out->write(Hex::decode(gmp_strval($this->p, 16)),'string');
-        $out->write(Hex::decode(gmp_strval($this->q, 16)),'string');
+        $out->write($this->p,'string');
+        $out->write($this->q,'string');
         $out->write($this->nonce,'int128');
-        $out->write(base64_decode($this->serverNonce),'int128');
+        $out->write($this->serverNonce,'int128');
         $out->write($this->newNonce,'int256');
         $out->write($this->dc,'int');
     }

@@ -41,16 +41,16 @@ class MessageContainer
     {
         // bind header
         $out = new OutputSerializedData();
-        $out->writeInt64((int)$this->authKeyId);
-        $out->writeInt64($this->messageId);
+        $out->write((int)$this->authKeyId,'long');
+        $out->write($this->messageId,'long');
 
         // get body
         $body = $this->serializeBody();
         $bodyLen = strlen($body);
 
         // bind body to message
-        $out->writeInt32($bodyLen);
-        $out->writeRaw($body);
+        $out->write($bodyLen,'int');
+        $out->write($body,'raw');
 
         return $out->data;
     }
@@ -66,7 +66,7 @@ class MessageContainer
     private function serializeBody(): string
     {
         $body = new OutputSerializedData();
-        $body->writeInt32($this->message::getConstructor());
+        $body->write($this->message::getConstructor(),'#');
         $this->message->serialize($body);
         return $body->data;
     }

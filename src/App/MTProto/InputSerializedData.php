@@ -2,8 +2,11 @@
 
 namespace App\MTProto;
 
+use danog\MadelineProto\Magic;
+
 class InputSerializedData
 {
+    static public bool $BIG_ENDIAN = false;
     public string $data;
     public int $offset = 0;
 
@@ -23,9 +26,12 @@ class InputSerializedData
         switch ($type) {
             case '#':
                 return $this->readConstructor();
+            case 'message_len':
+                return $this->readMessageLen();
             case 'string':
-            case 'strLong':
                 return $this->readString();
+            case 'strLong':
+                return $this->readRaw(8);
             case 'int':
                 return $this->readInt32();
             case 'long':
@@ -46,21 +52,28 @@ class InputSerializedData
 
     private function readInt32(): int
     {
-        $val = unpack('V', substr($this->data, $this->offset, 4))[1];
+//        $val = unpack('V', substr($this->data, $this->offset, 4))[1];
+        $val = unpack('l', substr($this->data, $this->offset, 4))[1];
         $this->offset += 4;
         return $val;
     }
 
+    private function readMessageLen() : int
+    {
+        return unpack('V', substr($this->data, $this->offset, 4))[1];
+    }
+
     private function readInt64(): int
     {
-        $val = unpack('P', substr($this->data, $this->offset, 8))[1];
+//        $val = unpack('P', substr($this->data, $this->offset, 8))[1];
+        $val = unpack('q', substr($this->data, $this->offset, 8))[1];
         $this->offset += 8;
         return $val;
     }
 
     private function readInt128(): string
     {
-        return base64_encode($this->readRaw(16));
+        return $this->readRaw(16);
     }
 
     private function readFloat(): float
@@ -84,10 +97,39 @@ class InputSerializedData
         if ($val === 0xbc799737) return false;
         throw new \Exception("Invalid bool value: 0x" . dechex($val));
     }
-
+    private static function posmod(int $a, int $b): int
+    {
+        $resto = $a % $b;
+        return $resto < 0 ? $resto + abs($b) : $resto;
+    }
     private function readString(): string
     {
-        $len = ord($this->data[$this->offset]);
+        $l = \ord($this->readRaw(1));
+
+        if ($l > 254) {
+            throw new \Exception('Invalid string length');
+        }
+        if ($l === 254) {
+            $long_len = unpack('V', $this->readRaw(3).\chr(0))[1];
+            $x = $this->readRaw($long_len);
+            $resto = self::posmod(-$long_len, 4);
+            if ($resto > 0) {
+                $this->readRaw($resto);
+            }
+        } else {
+            $x = $l ? $this->readRaw($l) : '';
+            $resto = self::posmod(-($l + 1), 4);
+            if ($resto > 0) {
+                $this->readRaw($resto);
+            }
+        }
+        if (!\is_string($x)) {
+            throw new \Exception("Generated value isn't a string");
+        }
+        return $x;
+
+
+/*        $len = ord($this->data[$this->offset]);
         $this->offset += 1;
 
         if ($len === 254) {
@@ -104,7 +146,7 @@ class InputSerializedData
         $padLen = (4 - (($len + ($len < 254 ? 1 : 4)) % 4)) % 4;
 
         $this->offset += $padLen;
-        return $val;
+        return $val;*/
     }
 
     private function readVector(callable $deserializeItem): array
